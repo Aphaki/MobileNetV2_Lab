@@ -18,7 +18,7 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate & UINavi
     let imagePicker = UIImagePickerController()
     
     @IBAction func photoIconPressed(_ sender: UIBarButtonItem) {
-        
+        present(imagePicker, animated: true)
     }
     
     override func viewDidLoad() {
@@ -41,6 +41,7 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate & UINavi
                 fatalError("UIImage -> CIImage 변환 실패")
             }
             detect(ciImg: ciImage)
+            emptyView.isHidden = true
         }
     }
     func detect(ciImg: CIImage) {
@@ -52,18 +53,19 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate & UINavi
         guard let vnModel = try? VNCoreMLModel(for: model) else {
             fatalError("VN 모델 생성 불가")
         }
-        let classifyImageRequest = VNClassifyImageRequest { request, error in
+        let vnCoreMLRequest = VNCoreMLRequest(model: vnModel) { request, error in
             let results = request.results as? [VNClassificationObservation]
             print(results ?? "result is nil")
             guard let topResult = results?.first else {
                 fatalError("Top result is nil")
             }
-            self.navigationItem.title = topResult.identifier
+            let confidence = topResult.confidence.binade
+            self.navigationItem.title = "\(confidence*100)%  " + topResult.identifier.capitalized
         }
         
         let handler = VNImageRequestHandler(ciImage: ciImg)
         do {
-            try handler.perform([classifyImageRequest])
+            try handler.perform([vnCoreMLRequest])
         } catch {
             print("Handler perform error")
         }
